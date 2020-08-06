@@ -15,8 +15,16 @@ class Cutit {
     };
     this.init();
   }
+
   init() {
+    this.listeners();
     this.render();
+  }
+
+  listeners(){
+    window.addEventListener('resize' , (event) => {
+      this.resizeData();
+    })
   }
 
   render() {
@@ -38,14 +46,28 @@ class Cutit {
     context.fillRect(0, 0, element.width, element.height);
   }
 
+  resizeData(){
+    let { canvas, image } = this;
+    if(!image) return;
+    let imageProportion = image.element.height / image.element.width;
+    canvas.element.height = canvas.element.width * imageProportion;
+  }
+
   drawImage() {
     let { image, canvas } = this,
       { context, element } = canvas;
     if (!image) return;
-    context.drawImage(image.element.target, 0, 0, element.clientWidth, element.clientHeight);
+    context.drawImage(
+      image.element.target,
+      0,
+      0,
+      element.clientWidth,
+      element.clientHeight
+    );
   }
 
   setImage(event) {
+    let { context, element } = this.canvas;
     if (!event) return;
     let file = event.target.files[0],
       fileResult = {};
@@ -75,6 +97,7 @@ class Cutit {
       };
     }).then((resp) => {
       this.image = resp;
+      this.resizeData();
     });
   }
 }
