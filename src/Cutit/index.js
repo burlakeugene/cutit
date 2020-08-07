@@ -6,6 +6,7 @@ class Cutit {
       context: canvas.getContext('2d'),
     };
     this.image = false;
+    this.points = [];
     this.settings = {
       view: {
         styles: {
@@ -21,15 +22,29 @@ class Cutit {
     this.render();
   }
 
-  listeners(){
-    window.addEventListener('resize' , (event) => {
-      this.resizeData();
-    })
+  listeners() {
+    let { element } = this.canvas;
+    window.addEventListener('resize', (event) => {
+      this.resize();
+    });
+    element.addEventListener('click', (event) => {
+      this.addPoint(event);
+    });
+  }
+
+  addPoint(event) {
+    let { image, points } = this;
+    if (!image) return;
+    points.push({
+      x: event.layerX,
+      y: event.layerY,
+    });
   }
 
   render() {
     this.drawBackground();
     this.drawImage();
+    this.drawPoints();
     requestAnimationFrame(this.render.bind(this));
   }
 
@@ -46,9 +61,9 @@ class Cutit {
     context.fillRect(0, 0, element.width, element.height);
   }
 
-  resizeData(){
+  resize() {
     let { canvas, image } = this;
-    if(!image) return;
+    if (!image) return;
     let imageProportion = image.element.height / image.element.width;
     canvas.element.height = canvas.element.width * imageProportion;
   }
@@ -64,6 +79,31 @@ class Cutit {
       element.clientWidth,
       element.clientHeight
     );
+  }
+
+  drawPoints() {
+    let { points, canvas } = this,
+      { context, element } = canvas;
+    for(let i = 0; i <= points.length - 1; i++){
+      let point = points[i];
+
+      context.beginPath();
+      context.arc(point.x, point.y, 6, 0, 2 * Math.PI, false);
+      context.fillStyle = '#ffffff80';
+      context.fill();
+      context.lineWidth = 0;
+      context.strokeStyle = 'transparent';
+      context.stroke();
+
+      context.beginPath();
+      context.arc(point.x, point.y, 3, 0, 2 * Math.PI, false);
+      context.fillStyle = 'white';
+      context.fill();
+      context.lineWidth = 0;
+      context.strokeStyle = 'transparent';
+      context.stroke();
+
+    }
   }
 
   setImage(event) {
@@ -97,7 +137,7 @@ class Cutit {
       };
     }).then((resp) => {
       this.image = resp;
-      this.resizeData();
+      this.resize();
     });
   }
 }
