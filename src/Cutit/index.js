@@ -13,6 +13,21 @@ class Cutit {
           color: '#000',
         },
       },
+      points: {
+        point: {
+          styles: {
+            color: '#ffffff',
+            width: 4,
+          },
+        },
+        line: {
+          styles: {
+            color: '#ffffff',
+            width: 2,
+            dash: [4, 4],
+          },
+        },
+      },
     };
     this.init();
   }
@@ -33,11 +48,15 @@ class Cutit {
   }
 
   addPoint(event) {
-    let { image, points } = this;
+    let { image, points, canvas } = this;
     if (!image) return;
     points.push({
       x: event.layerX,
       y: event.layerY,
+      parent: {
+        width: canvas.element.width,
+        height: canvas.element.height,
+      },
     });
   }
 
@@ -62,10 +81,21 @@ class Cutit {
   }
 
   resize() {
-    let { canvas, image } = this;
+    let { canvas, image, points } = this;
     if (!image) return;
     let imageProportion = image.element.height / image.element.width;
     canvas.element.height = canvas.element.width * imageProportion;
+    for (let i = 0; i <= points.length - 1; i++) {
+      let point = points[i],
+        newParentWidth = canvas.element.width,
+        newParentHeight = canvas.element.height;
+      point.x = (point.x / point.parent.width) * newParentWidth;
+      point.y = (point.y / point.parent.height) * newParentHeight;
+      point.parent = {
+        width: newParentWidth,
+        height: newParentHeight,
+      };
+    }
   }
 
   drawImage() {
@@ -82,27 +112,46 @@ class Cutit {
   }
 
   drawPoints() {
-    let { points, canvas } = this,
+    let { points, canvas, settings } = this,
+      pointStyles = settings.points.point.styles,
+      lineStyles = settings.points.line.styles,
       { context, element } = canvas;
-    for(let i = 0; i <= points.length - 1; i++){
+
+    context.lineWidth = lineStyles.width;
+    context.strokeStyle = lineStyles.color;
+    context.beginPath();
+    if (lineStyles.dash) {
+      context.setLineDash(lineStyles.dash);
+    }
+    for (let i = 0; i <= points.length - 1; i++) {
+      let point = points[i];
+      if (i === 0) context.moveTo(point.x, point.y);
+      else {
+        context.lineTo(point.x, point.y);
+      }
+    }
+    context.stroke();
+    for (let i = 0; i <= points.length - 1; i++) {
       let point = points[i];
 
+      // context.save();
+      // context.globalAlpha = 0.5;
+      // context.beginPath();
+      // context.arc(point.x, point.y, styles.width * 2, 0, 2 * Math.PI, false);
+      // context.fillStyle = styles.color;
+      // context.fill();
+      // context.lineWidth = 0;
+      // context.strokeStyle = 'transparent';
+      // context.stroke();
+      // context.restore();
+
       context.beginPath();
-      context.arc(point.x, point.y, 6, 0, 2 * Math.PI, false);
-      context.fillStyle = '#ffffff80';
+      context.arc(point.x, point.y, pointStyles.width, 0, 2 * Math.PI, false);
+      context.fillStyle = pointStyles.color;
       context.fill();
       context.lineWidth = 0;
       context.strokeStyle = 'transparent';
       context.stroke();
-
-      context.beginPath();
-      context.arc(point.x, point.y, 3, 0, 2 * Math.PI, false);
-      context.fillStyle = 'white';
-      context.fill();
-      context.lineWidth = 0;
-      context.strokeStyle = 'transparent';
-      context.stroke();
-
     }
   }
 
@@ -135,10 +184,14 @@ class Cutit {
           resolve(fileResult);
         };
       };
-    }).then((resp) => {
-      this.image = resp;
-      this.resize();
-    });
+    })
+      .then((resp) => {
+        this.image = resp;
+      })
+      .finally(() => {
+        this.points = [];
+        this.resize();
+      });
   }
 }
 
