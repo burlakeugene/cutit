@@ -29,6 +29,11 @@ class Cutit {
         },
       },
     };
+    this.down = this.down.bind(this);
+    this.move = this.move.bind(this);
+    this.up = this.up.bind(this);
+    this.contextmenu = this.contextmenu.bind(this);
+    this.resize = this.resize.bind(this);
     this.init();
   }
 
@@ -37,14 +42,87 @@ class Cutit {
     this.render();
   }
 
+  move(event) {
+    let { settings, points, canvas } = this,
+      pointStyles = settings.points.point.styles,
+      radius = pointStyles.width,
+      x = event.layerX,
+      y = event.layerY;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i].moved) {
+        points[i] = {
+          ...points[i],
+          x,
+          y,
+          xPercent: x / canvas.element.width,
+          yPercent: y / canvas.element.height,
+        };
+        return;
+      }
+    }
+    for (let i = points.length - 1; i >= 0; i--) {
+      points[i].hovered = false;
+    }
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (
+        x >= points[i].x - radius &&
+        x <= points[i].x + radius &&
+        y >= points[i].y - radius &&
+        y <= points[i].y + radius
+      ) {
+        points[i].hovered = true;
+        break;
+      }
+    }
+  }
+
+  down(event) {
+    let { points } = this,
+      isMoved = false;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i].hovered) {
+        isMoved = true;
+        points[i].moved = true;
+        break;
+      }
+    }
+    if (!isMoved) this.addPoint(event);
+  }
+
+  up(event) {
+    let { points } = this;
+    for (let i = points.length - 1; i >= 0; i--) {
+      points[i].moved = false;
+    }
+  }
+
+  contextmenu(event){
+    event.preventDefault();
+    let { settings, points, canvas } = this,
+      pointStyles = settings.points.point.styles,
+      radius = pointStyles.width,
+      x = event.layerX,
+      y = event.layerY;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (
+        x >= points[i].x - radius &&
+        x <= points[i].x + radius &&
+        y >= points[i].y - radius &&
+        y <= points[i].y + radius
+      ) {
+        this.points.splice(i, 1)
+        break;
+      }
+    }
+  }
+
   listeners() {
     let { element } = this.canvas;
-    window.addEventListener('resize', (event) => {
-      this.resize();
-    });
-    element.addEventListener('click', (event) => {
-      this.addPoint(event);
-    });
+    element.addEventListener('contextmenu', this.contextmenu);
+    window.addEventListener('resize', this.resize);
+    element.addEventListener('pointermove', this.move);
+    element.addEventListener('pointerdown', this.down);
+    element.addEventListener('pointerup', this.up);
   }
 
   addPoint(event) {
@@ -55,6 +133,7 @@ class Cutit {
       y: event.layerY,
       xPercent: event.layerX / canvas.element.width,
       yPercent: event.layerY / canvas.element.height,
+      hovered: true,
     });
   }
 
@@ -127,7 +206,14 @@ class Cutit {
       let point = points[i];
 
       context.beginPath();
-      context.arc(point.x, point.y, pointStyles.width, 0, 2 * Math.PI, false);
+      context.arc(
+        point.x,
+        point.y,
+        pointStyles.width * (point.hovered ? 2 : 1),
+        0,
+        2 * Math.PI,
+        false
+      );
       context.fillStyle = pointStyles.color;
       context.fill();
       context.lineWidth = 0;
