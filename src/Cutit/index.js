@@ -53,10 +53,8 @@ class Cutit {
     points.push({
       x: event.layerX,
       y: event.layerY,
-      parent: {
-        width: canvas.element.width,
-        height: canvas.element.height,
-      },
+      xPercent: event.layerX / canvas.element.width,
+      yPercent: event.layerY / canvas.element.height,
     });
   }
 
@@ -86,15 +84,9 @@ class Cutit {
     let imageProportion = image.element.height / image.element.width;
     canvas.element.height = canvas.element.width * imageProportion;
     for (let i = 0; i <= points.length - 1; i++) {
-      let point = points[i],
-        newParentWidth = canvas.element.width,
-        newParentHeight = canvas.element.height;
-      point.x = (point.x / point.parent.width) * newParentWidth;
-      point.y = (point.y / point.parent.height) * newParentHeight;
-      point.parent = {
-        width: newParentWidth,
-        height: newParentHeight,
-      };
+      let point = points[i];
+      point.x = point.xPercent * canvas.element.width;
+      point.y = point.yPercent * canvas.element.height;
     }
   }
 
@@ -133,17 +125,6 @@ class Cutit {
     context.stroke();
     for (let i = 0; i <= points.length - 1; i++) {
       let point = points[i];
-
-      // context.save();
-      // context.globalAlpha = 0.5;
-      // context.beginPath();
-      // context.arc(point.x, point.y, styles.width * 2, 0, 2 * Math.PI, false);
-      // context.fillStyle = styles.color;
-      // context.fill();
-      // context.lineWidth = 0;
-      // context.strokeStyle = 'transparent';
-      // context.stroke();
-      // context.restore();
 
       context.beginPath();
       context.arc(point.x, point.y, pointStyles.width, 0, 2 * Math.PI, false);
