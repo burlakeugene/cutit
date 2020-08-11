@@ -90,13 +90,28 @@ class Cutit {
   }
 
   up(event) {
-    let { points } = this;
+    let { points, settings } = this,
+      pointStyles = settings.points.point.styles,
+      radius = pointStyles.width,
+      x = event.layerX,
+      y = event.layerY,
+      firstPoint = points[0];
     for (let i = points.length - 1; i >= 0; i--) {
       points[i].moved = false;
     }
+    if (
+      firstPoint &&
+      points.length >= 3 &&
+      x >= firstPoint.x - radius &&
+      x <= firstPoint.x + radius &&
+      y >= firstPoint.y - radius &&
+      y <= firstPoint.y + radius
+    ) {
+      points[points.length - 1].end = true;
+    }
   }
 
-  contextmenu(event){
+  contextmenu(event) {
     event.preventDefault();
     let { settings, points, canvas } = this,
       pointStyles = settings.points.point.styles,
@@ -110,7 +125,7 @@ class Cutit {
         y >= points[i].y - radius &&
         y <= points[i].y + radius
       ) {
-        this.points.splice(i, 1)
+        this.points.splice(i, 1);
         break;
       }
     }
@@ -128,7 +143,11 @@ class Cutit {
   addPoint(event) {
     let { image, points, canvas } = this;
     if (!image) return;
-    points.push({
+    let action =
+      points[points.length - 1] && points[points.length - 1].end
+        ? 'unshift'
+        : 'push';
+    points[action]({
       x: event.layerX,
       y: event.layerY,
       xPercent: event.layerX / canvas.element.width,
@@ -194,14 +213,20 @@ class Cutit {
     if (lineStyles.dash) {
       context.setLineDash(lineStyles.dash);
     }
-    for (let i = 0; i <= points.length - 1; i++) {
-      let point = points[i];
+    let lines = [...points],
+      firstPoint = points[0];
+    for (let i = 0; i <= lines.length - 1; i++) {
+      let point = lines[i];
       if (i === 0) context.moveTo(point.x, point.y);
       else {
         context.lineTo(point.x, point.y);
       }
+      if (point.end) {
+        context.lineTo(firstPoint.x, firstPoint.y);
+      }
     }
     context.stroke();
+
     for (let i = 0; i <= points.length - 1; i++) {
       let point = points[i];
 
