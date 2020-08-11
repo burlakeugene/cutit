@@ -90,7 +90,7 @@ class Cutit {
   }
 
   up(event) {
-    let { points, settings } = this,
+    let { points, settings, canvas } = this,
       pointStyles = settings.points.point.styles,
       radius = pointStyles.width,
       x = event.layerX,
@@ -108,7 +108,37 @@ class Cutit {
       y <= firstPoint.y + radius
     ) {
       points[points.length - 1].end = true;
+      this.cropAndUpload();
     }
+  }
+
+  cropAndUpload() {
+    let { points, canvas } = this,
+      { context, element } = canvas;
+    this.notRenderPoints = true;
+    setTimeout(() => {
+      context.globalCompositeOperation = 'destination-out';
+      context.beginPath();
+      let firstPoint = points[0],
+        lines = [...points, firstPoint];
+      for (let i = 0; i <= lines.length - 1; i++) {
+        let point = lines[i];
+        if (i === 0) context.moveTo(point.x, point.y);
+        else {
+          context.lineTo(point.x, point.y);
+        }
+        if (point.end) {
+          context.lineTo(firstPoint.x, firstPoint.y);
+        }
+      }
+      context.closePath();
+      context.fill();
+      var image = element
+        .toDataURL('image/png')
+        .replace('image/png', 'image/octet-stream');
+      window.location.href = image;
+      this.notRenderPoints = false;
+    }, 50);
   }
 
   contextmenu(event) {
@@ -202,6 +232,8 @@ class Cutit {
   }
 
   drawPoints() {
+    console.log(this.notRenderPoints);
+    if (this.notRenderPoints) return;
     let { points, canvas, settings } = this,
       pointStyles = settings.points.point.styles,
       lineStyles = settings.points.line.styles,
